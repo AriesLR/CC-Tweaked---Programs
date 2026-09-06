@@ -31,7 +31,7 @@ fs.delete("]] .. selfPath .. [[")
 fs.delete("/delete_self.lua")
 
 -- Download the latest version of install_display.lua
-shell.run("wget https://raw.githubusercontent.com/AriesLR/Spoticraft/refs/heads/main/install_display.lua /install_display.lua")
+shell.run("wget https://raw.githubusercontent.com/AriesLR/CC-Tweaked---Programs/refs/heads/main/programs/elevator-floor-display/install_display.lua /install_display.lua")
 
 -- Run the updated script
 shell.run("/install_display.lua")

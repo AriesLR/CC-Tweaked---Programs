@@ -31,7 +31,7 @@ fs.delete("]] .. selfPath .. [[")
 fs.delete("/delete_self.lua")
 
 -- Download the latest version of install_send.lua
-shell.run("wget https://raw.githubusercontent.com/AriesLR/Spoticraft/refs/heads/main/install_send.lua /install_send.lua")
+shell.run("wget https://raw.githubusercontent.com/AriesLR/CC-Tweaked---Programs/refs/heads/main/programs/elevator-floor-display/install_send.lua /install_send.lua")
 
 -- Run the updated script
 shell.run("/install_send.lua")
