@@ -7,29 +7,36 @@ if not modem then error("Ender Modem not found!") end
 
 modem.open(CHANNEL)
 
-local timerID = os.startTimer(0.1)
+local function transmitLoop()
+    local lastFloor = nil
+    while true do
+        local floorData = lift.getNearestFloor()
+        
+        if type(floorData) == "table" and floorData.name then
+            local floorName = floorData.name
+            
+            if floorName ~= lastFloor then
+                modem.transmit(CHANNEL, CHANNEL, { 
+                    floor = floorName,
+                    moving = lift.isMoving()
+                })
+                lastFloor = floorName
+            end
+        end
+        
+        sleep(0.1)
+    end
+end
 
-while true do
-    local event, p1, p2, p3, message = os.pullEventRaw()
-    
-    if event == "modem_message" and p1 == CHANNEL and type(message) == "table" then
-        if message.action == "call" and message.targetFloor then
-            if lift.callToFloor then
+local function listenForCalls()
+    while true do
+        local _, _, sendChannel, _, message = os.pullEvent("modem_message")
+        if sendChannel == CHANNEL and type(message) == "table" and message.action == "call" then
+            if message.targetFloor then
                 lift.callToFloor(tostring(message.targetFloor))
             end
         end
-
-    elseif event == "timer" and p1 == timerID then
-        local floorData = lift.getNearestFloor()
-        local isMoving = lift.isMoving()
-        
-        if type(floorData) == "table" and floorData.name then
-            modem.transmit(CHANNEL, CHANNEL, { 
-                floor = tostring(floorData.name),
-                moving = isMoving
-            })
-        end
-        
-        timerID = os.startTimer(0.1)
     end
 end
+
+parallel.waitForAny(transmitLoop, listenForCalls)
