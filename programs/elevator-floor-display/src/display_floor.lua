@@ -6,7 +6,9 @@ if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
 
 modem.open(CHANNEL)
-monitor.setTextScale(3)
+
+monitor.setTextScale(1.5)
+local termW, termH = monitor.getSize()
 
 local myFloor = nil
 if fs.exists("floor.txt") then
@@ -40,17 +42,25 @@ local function drawDisplay(floor, isMoving)
         monitor.setTextColor(colors.lime)
     end
     monitor.write(tostring(floor))
-
-    monitor.setCursorPos(1, 3)
-    if tostring(floor) == tostring(myFloor) and not isMoving then
-        monitor.setBackgroundColor(colors.gray)
-        monitor.setTextColor(colors.white)
-        monitor.write("[HERE]")
-    else
-        monitor.setBackgroundColor(colors.blue)
-        monitor.setTextColor(colors.white)
-        monitor.write("[CALL]")
+    
+    local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
+    
+    local btnBg = isHere and colors.gray or colors.cyan
+    local btnText = isHere and colors.lightGray or colors.black
+    local btnLabel = isHere and " HERE " or " CALL "
+    
+    for lineY = termH - 1, termH do
+        monitor.setCursorPos(1, lineY)
+        monitor.setBackgroundColor(btnBg)
+        monitor.setTextColor(btnText)
+        
+        if lineY == termH - 1 then
+            monitor.write(btnLabel)
+        else
+            monitor.write(string.rep(" ", termW))
+        end
     end
+    
     monitor.setBackgroundColor(colors.black)
 end
 
@@ -64,17 +74,24 @@ while true do
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
         
-    elseif event == "monitor_touch" and p3 == 3 then
+    elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
         
-        monitor.setCursorPos(1, 3)
-        monitor.setBackgroundColor(colors.lime)
-        monitor.setTextColor(colors.black)
-        monitor.write("[WAIT]")
-        sleep(0.5)
+        for lineY = termH - 1, termH do
+            monitor.setCursorPos(1, lineY)
+            monitor.setBackgroundColor(colors.lime)
+            monitor.setTextColor(colors.black)
+            if lineY == termH - 1 then
+                monitor.write(" WAIT ")
+            else
+                monitor.write(string.rep(" ", termW))
+            end
+        end
+        
+        sleep(0.4)
         drawDisplay(currentFloor, isElevatorMoving)
     end
 end

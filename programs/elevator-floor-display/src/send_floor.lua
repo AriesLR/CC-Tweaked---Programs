@@ -9,18 +9,28 @@ modem.open(CHANNEL)
 
 local function transmitLoop()
     local lastFloor = nil
+    local lastMoving = nil
+    
     while true do
         local floorData = lift.getNearestFloor()
         
         if type(floorData) == "table" and floorData.name then
             local floorName = floorData.name
             
-            if floorName ~= lastFloor then
+            local movingState = false
+            if lift.getSpeed then
+                movingState = math.abs(lift.getSpeed()) > 0
+            else
+                movingState = lift.isMoving()
+            end
+            
+            if floorName ~= lastFloor or movingState ~= lastMoving then
                 modem.transmit(CHANNEL, CHANNEL, { 
                     floor = floorName,
-                    moving = lift.isMoving()
+                    moving = movingState
                 })
                 lastFloor = floorName
+                lastMoving = movingState
             end
         end
         
@@ -32,7 +42,7 @@ local function listenForCalls()
     while true do
         local _, _, sendChannel, _, message = os.pullEvent("modem_message")
         if sendChannel == CHANNEL and type(message) == "table" and message.action == "call" then
-            if message.targetFloor then
+            if message.targetFloor and lift.callToFloor then
                 lift.callToFloor(tostring(message.targetFloor))
             end
         end
