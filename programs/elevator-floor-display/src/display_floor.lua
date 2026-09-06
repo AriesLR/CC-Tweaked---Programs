@@ -2,7 +2,7 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- if you see this, the cache has been busted
+-- cache bust notification
 
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
@@ -42,6 +42,12 @@ local function writeCentered(text, y, fgColor, bgColor)
     monitor.write(line)
 end
 
+local function fillRow(y, bgColor)
+    monitor.setCursorPos(1, y)
+    monitor.setBackgroundColor(bgColor)
+    monitor.write(string.rep(" ", termW))
+end
+
 local function drawDisplay(floor, isMoving)
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
@@ -50,11 +56,13 @@ local function drawDisplay(floor, isMoving)
     writeCentered(floor, 2, floorColor, colors.black)
     
     local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
-    local btnBg = isHere and colors.gray or colors.lightGray
+    local btnBg = isHere and colors.gray or colors.cyan
     local btnFg = isHere and colors.lightGray or colors.black
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
     
     writeCentered(btnText, termH - 1, btnFg, btnBg)
+    
+    fillRow(termH, btnBg)
     
     monitor.setBackgroundColor(colors.black)
 end
@@ -69,13 +77,14 @@ while true do
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
         
-    elseif event == "monitor_touch" and p3 >= termH - 2 then
+    elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
         
         writeCentered("[ WAIT ]", termH - 1, colors.black, colors.lime)
+        fillRow(termH, colors.lime)
         sleep(0.4)
         drawDisplay(currentFloor, isElevatorMoving)
     end
