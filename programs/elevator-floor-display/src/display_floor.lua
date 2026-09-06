@@ -40,7 +40,7 @@ local function drawDisplay(floor, isMoving)
         monitor.setTextColor(colors.lime)
     end
     monitor.write(tostring(floor))
-    
+
     monitor.setCursorPos(1, 3)
     if tostring(floor) == tostring(myFloor) and not isMoving then
         monitor.setBackgroundColor(colors.gray)
@@ -57,14 +57,14 @@ end
 drawDisplay("--", false)
 
 while true do
-    local event, side, x, y, message = os.pullEvent()
+    local event, p1, p2, p3, p4 = os.pullEvent()
     
-    if event == "modem_message" and side == CHANNEL and type(message) == "table" and message.floor then
-        currentFloor = message.floor
-        isElevatorMoving = message.moving or false
+    if event == "modem_message" and p2 == CHANNEL and type(p4) == "table" and p4.floor then
+        currentFloor = p4.floor
+        isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
         
-    elseif event == "monitor_touch" and y == 3 then
+    elseif event == "monitor_touch" and p3 == 3 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
