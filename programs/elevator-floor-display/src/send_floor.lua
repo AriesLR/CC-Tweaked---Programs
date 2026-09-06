@@ -8,16 +8,19 @@ if not modem then error("Ender Modem not found!") end
 local lastFloor = nil
 
 while true do
-    -- getNearestFloor() returns the nearest floor name/identifier
-    local floorName, floorY = lift.getNearestFloor()
+    -- getNearestFloor() returns a table as its first return value
+    local floorData = lift.getNearestFloor()
     
-    if floorName and floorName ~= lastFloor then
-        modem.transmit(CHANNEL, CHANNEL, { 
-            floor = floorName,
-            moving = lift.isMoving(),
-            state = lift.getState()
-        })
-        lastFloor = floorName
+    if type(floorData) == "table" and floorData.name then
+        local floorName = floorData.name
+        
+        if floorName ~= lastFloor then
+            modem.transmit(CHANNEL, CHANNEL, { 
+                floor = floorName,
+                moving = lift.isMoving()
+            })
+            lastFloor = floorName
+        end
     end
     
     sleep(0.1)
