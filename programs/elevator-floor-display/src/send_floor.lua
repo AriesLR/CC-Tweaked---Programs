@@ -8,28 +8,38 @@ if not modem then error("Ender Modem not found!") end
 modem.open(CHANNEL)
 
 local lastFloor = nil
+local lastMoving = nil
+
+-- Timer for non-blocking loop
+local timerID = os.startTimer(0.1)
 
 while true do
-    -- Check for incoming modem call requests or broadcast updates
     local event, side, sendChannel, replyChannel, message = os.pullEvent()
     
+    -- Handle incoming call requests from display monitors
     if event == "modem_message" and sendChannel == CHANNEL and type(message) == "table" then
-        -- Handle elevator call from a floor monitor
         if message.action == "call" and message.targetFloor then
             if lift.callToFloor then
                 lift.callToFloor(tostring(message.targetFloor))
             end
         end
-    end
     
-    -- Periodic Floor Broadcast
-    local floorData = lift.getNearestFloor()
-    if type(floorData) == "table" and floorData.name then
-        local floorName = floorData.name
+    -- Non-blocking timer tick to update elevator state
+    elseif event == "timer" and side == timerID then
+        local floorData = lift.getNearestFloor()
+        local isMoving = lift.isMoving()
         
-        modem.transmit(CHANNEL, CHANNEL, { 
-            floor = floorName,
-            moving = lift.isMoving()
-        })
+        if type(floorData) == "table" and floorData.name then
+            local floorName = floorData.name
+            
+            -- Broadcast updates to all monitors
+            modem.transmit(CHANNEL, CHANNEL, { 
+                floor = floorName,
+                moving = isMoving
+            })
+        end
+        
+        -- Restart timer for next tick
+        timerID = os.startTimer(0.1)
     end
 end
