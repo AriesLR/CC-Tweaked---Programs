@@ -1,6 +1,6 @@
-local scriptUrl = "https://raw.githubusercontent.com/AriesLR/CC-Tweaked---Programs/refs/heads/main/programs/elevator-floor-display/src/send_floor.lua"
-local updateUrl = "https://raw.githubusercontent.com/AriesLR/CC-Tweaked---Programs/refs/heads/main/programs/elevator-floor-display/src/update_send.lua"
-local uninstallUrl = "https://raw.githubusercontent.com/AriesLR/CC-Tweaked---Programs/refs/heads/main/programs/elevator-floor-display/src/uninstall.lua"
+local scriptUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/send_floor.lua"
+local updateUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/update_send.lua"
+local uninstallUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/uninstall.lua"
 local targetDir = "/alr/elevator-floor-display"
 
 -- Ensure the directory exists
