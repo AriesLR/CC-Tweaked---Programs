@@ -2,7 +2,7 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- github why do you punish me with your cache
+-- please github
 
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
@@ -42,11 +42,11 @@ local function writeCentered(text, y, fgColor, bgColor)
     monitor.write(line)
 end
 
-local function drawHalfRowTop(y, topBgColor, bottomBgColor)
+local function drawButtonCap(y, btnColor)
     monitor.setCursorPos(1, y)
-    monitor.setTextColor(topBgColor)
-    monitor.setBackgroundColor(bottomBgColor)
-    monitor.write(string.rep("\140", termW))
+    monitor.setTextColor(btnColor)
+    monitor.setBackgroundColor(colors.black)
+    monitor.write(string.rep("\143", termW))
 end
 
 local function drawDisplay(floor, isMoving)
@@ -55,14 +55,13 @@ local function drawDisplay(floor, isMoving)
     
     local floorColor = isMoving and colors.yellow or colors.lime
     writeCentered(floor, 2, floorColor, colors.black)
-
+    
     local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
     local btnBg = isHere and colors.gray or colors.cyan
     local btnFg = isHere and colors.lightGray or colors.black
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
-
-    drawHalfRowTop(termH - 1, colors.black, btnBg)
-
+    
+    drawButtonCap(termH - 1, btnBg)
     writeCentered(btnText, termH, btnFg, btnBg)
     
     monitor.setBackgroundColor(colors.black)
@@ -72,19 +71,19 @@ drawDisplay("--", false)
 
 while true do
     local event, p1, p2, p3, p4 = os.pullEvent()
-
+    
     if event == "modem_message" and p2 == CHANNEL and type(p4) == "table" and p4.floor then
         currentFloor = p4.floor
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
-
+        
     elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
-
-        drawHalfRowTop(termH - 1, colors.black, colors.lime)
+        
+        drawButtonCap(termH - 1, colors.lime)
         writeCentered("[ WAIT ]", termH, colors.black, colors.lime)
         
         sleep(0.4)
