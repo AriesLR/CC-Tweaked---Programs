@@ -2,14 +2,14 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- so sick of this cache, lol.
+-- cache be gone
 
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
 
 modem.open(CHANNEL)
 
-monitor.setTextScale(1)
+monitor.setTextScale(1.5)
 local termW, termH = monitor.getSize()
 
 local myFloor = nil
@@ -60,8 +60,6 @@ local function drawDisplay(floor, isMoving)
     local btnFg = isHere and colors.lightGray or colors.black
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
     
-    fillRow(termH - 2, btnBg)
-    
     writeCentered(btnText, termH - 1, btnFg, btnBg)
     
     fillRow(termH, btnBg)
@@ -79,13 +77,12 @@ while true do
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
         
-    elseif event == "monitor_touch" and p3 >= termH - 2 then
+    elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
         
-        fillRow(termH - 2, colors.lime)
         writeCentered("[ WAIT ]", termH - 1, colors.black, colors.lime)
         fillRow(termH, colors.lime)
         
