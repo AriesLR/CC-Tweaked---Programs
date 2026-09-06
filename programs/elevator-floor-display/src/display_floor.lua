@@ -2,7 +2,7 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- still hate this cache
+-- github why do you punish me with your cache
 
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
@@ -42,16 +42,17 @@ local function writeCentered(text, y, fgColor, bgColor)
     monitor.write(line)
 end
 
-local function fillRow(y, bgColor)
+local function drawHalfRowTop(y, topBgColor, bottomBgColor)
     monitor.setCursorPos(1, y)
-    monitor.setBackgroundColor(bgColor)
-    monitor.write(string.rep(" ", termW))
+    monitor.setTextColor(topBgColor)
+    monitor.setBackgroundColor(bottomBgColor)
+    monitor.write(string.rep("\140", termW))
 end
 
 local function drawDisplay(floor, isMoving)
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
-
+    
     local floorColor = isMoving and colors.yellow or colors.lime
     writeCentered(floor, 2, floorColor, colors.black)
 
@@ -60,10 +61,10 @@ local function drawDisplay(floor, isMoving)
     local btnFg = isHere and colors.lightGray or colors.black
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
 
-    fillRow(termH - 1, btnBg)
+    drawHalfRowTop(termH - 1, colors.black, btnBg)
 
     writeCentered(btnText, termH, btnFg, btnBg)
-
+    
     monitor.setBackgroundColor(colors.black)
 end
 
@@ -71,19 +72,19 @@ drawDisplay("--", false)
 
 while true do
     local event, p1, p2, p3, p4 = os.pullEvent()
-    
+
     if event == "modem_message" and p2 == CHANNEL and type(p4) == "table" and p4.floor then
         currentFloor = p4.floor
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
-        
+
     elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
-        
-        fillRow(termH - 1, colors.lime)
+
+        drawHalfRowTop(termH - 1, colors.black, colors.lime)
         writeCentered("[ WAIT ]", termH, colors.black, colors.lime)
         
         sleep(0.4)
