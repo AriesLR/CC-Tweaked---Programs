@@ -2,12 +2,14 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
+-- if you see this, the cache has been busted
+
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
 
 modem.open(CHANNEL)
 
-monitor.setTextScale(1.5)
+monitor.setTextScale(1)
 local termW, termH = monitor.getSize()
 
 local myFloor = nil
@@ -27,39 +29,32 @@ end
 local currentFloor = "--"
 local isElevatorMoving = false
 
+local function writeCentered(text, y, fgColor, bgColor)
+    monitor.setCursorPos(1, y)
+    monitor.setBackgroundColor(bgColor or colors.black)
+    monitor.setTextColor(fgColor or colors.white)
+    
+    local str = tostring(text)
+    local padding = math.floor((termW - #str) / 2)
+    if padding < 0 then padding = 0 end
+    
+    local line = string.rep(" ", padding) .. str .. string.rep(" ", termW - #str - padding)
+    monitor.write(line)
+end
+
 local function drawDisplay(floor, isMoving)
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
     
-    monitor.setCursorPos(1, 1)
-    monitor.setTextColor(colors.gray)
-    monitor.write("FLOOR")
-    
-    monitor.setCursorPos(1, 2)
-    if isMoving then
-        monitor.setTextColor(colors.yellow)
-    else
-        monitor.setTextColor(colors.lime)
-    end
-    monitor.write(tostring(floor))
+    local floorColor = isMoving and colors.yellow or colors.lime
+    writeCentered(floor, 2, floorColor, colors.black)
     
     local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
+    local btnBg = isHere and colors.gray or colors.lightGray
+    local btnFg = isHere and colors.lightGray or colors.black
+    local btnText = isHere and "[ HERE ]" or "[ CALL ]"
     
-    local btnBg = isHere and colors.gray or colors.cyan
-    local btnText = isHere and colors.lightGray or colors.black
-    local btnLabel = isHere and " HERE " or " CALL "
-    
-    for lineY = termH - 1, termH do
-        monitor.setCursorPos(1, lineY)
-        monitor.setBackgroundColor(btnBg)
-        monitor.setTextColor(btnText)
-        
-        if lineY == termH - 1 then
-            monitor.write(btnLabel)
-        else
-            monitor.write(string.rep(" ", termW))
-        end
-    end
+    writeCentered(btnText, termH - 1, btnFg, btnBg)
     
     monitor.setBackgroundColor(colors.black)
 end
@@ -74,23 +69,13 @@ while true do
         isElevatorMoving = p4.moving or false
         drawDisplay(currentFloor, isElevatorMoving)
         
-    elseif event == "monitor_touch" and p3 >= termH - 1 then
+    elseif event == "monitor_touch" and p3 >= termH - 2 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
             targetFloor = myFloor 
         })
         
-        for lineY = termH - 1, termH do
-            monitor.setCursorPos(1, lineY)
-            monitor.setBackgroundColor(colors.lime)
-            monitor.setTextColor(colors.black)
-            if lineY == termH - 1 then
-                monitor.write(" WAIT ")
-            else
-                monitor.write(string.rep(" ", termW))
-            end
-        end
-        
+        writeCentered("[ WAIT ]", termH - 1, colors.black, colors.lime)
         sleep(0.4)
         drawDisplay(currentFloor, isElevatorMoving)
     end
