@@ -10,16 +10,16 @@ modem.open(CHANNEL)
 local timerID = os.startTimer(0.1)
 
 while true do
-    local event, side, sendChannel, replyChannel, message = os.pullEvent()
+    local event, p1, p2, p3, message = os.pullEventRaw()
     
-    if event == "modem_message" and sendChannel == CHANNEL and type(message) == "table" then
+    if event == "modem_message" and p1 == CHANNEL and type(message) == "table" then
         if message.action == "call" and message.targetFloor then
             if lift.callToFloor then
                 lift.callToFloor(tostring(message.targetFloor))
             end
         end
-        
-    elseif event == "timer" and side == timerID then
+
+    elseif event == "timer" and p1 == timerID then
         local floorData = lift.getNearestFloor()
         local isMoving = lift.isMoving()
         

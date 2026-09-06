@@ -8,8 +8,8 @@ if not modem then error("No Ender Modem attached!") end
 
 modem.open(CHANNEL)
 
-monitor.setTextScale(1)
-local monitorWidth, monitorHeight = monitor.getSize()
+monitor.setTextScale(2)
+local w, h = monitor.getSize()
 
 local myFloor = nil
 if fs.exists("floor.txt") then
@@ -17,16 +17,16 @@ if fs.exists("floor.txt") then
     myFloor = file.readLine()
     file.close()
 else
+    print("--------------------------------")
     print("What floor is this computer on?")
-    io.write("Floor Name/Number (1-18): ")
+    io.write("Floor Number (1-18): ")
     myFloor = read()
     local file = fs.open("floor.txt", "w")
     file.write(myFloor)
     file.close()
 end
 
-local currentFloor = "--"
-local isMoving = false
+local currentElevatorFloor = "--"
 
 local function drawDisplay()
     monitor.setBackgroundColor(colors.black)
@@ -34,49 +34,27 @@ local function drawDisplay()
     
     monitor.setCursorPos(1, 1)
     monitor.setTextColor(colors.gray)
-    monitor.write("FLOORS (1-18)")
+    monitor.write("FLOOR")
     
-    local startY = 3
-    local currentY = startY
-    local currentX = 1
-    
-    for f = 1, 18 do
-        local strF = tostring(f)
-        
-        if strF == tostring(currentFloor) then
-            if isMoving then
-                monitor.setTextColor(colors.orange)
-            else
-                monitor.setTextColor(colors.lime)
-            end
-        else
-            monitor.setTextColor(colors.red)
-        end
-        
-        local itemText = string.format("%2d ", f)
-        if currentX + #itemText - 1 > monitorWidth then
-            currentX = 1
-            currentY = currentY + 1
-        end
-        
-        if currentY < monitorHeight - 1 then
-            monitor.setCursorPos(currentX, currentY)
-            monitor.write(itemText)
-            currentX = currentX + #itemText
-        end
+    monitor.setCursorPos(1, 2)
+    if tostring(currentElevatorFloor) == tostring(myFloor) then
+        monitor.setTextColor(colors.lime)
+    else
+        monitor.setTextColor(colors.orange)
     end
-
-    local btnY = monitorHeight
+    monitor.write(tostring(currentElevatorFloor))
+    
+    local btnY = h
     monitor.setCursorPos(1, btnY)
     
-    if tostring(currentFloor) == tostring(myFloor) and not isMoving then
+    if tostring(currentElevatorFloor) == tostring(myFloor) then
         monitor.setBackgroundColor(colors.gray)
         monitor.setTextColor(colors.white)
-        monitor.write(string.rep(" ", math.floor((monitorWidth - 8) / 2)) .. "[ HERE ]")
+        monitor.write("[HERE]")
     else
         monitor.setBackgroundColor(colors.blue)
         monitor.setTextColor(colors.white)
-        monitor.write(string.rep(" ", math.floor((monitorWidth - 8) / 2)) .. "[ CALL ]")
+        monitor.write("[CALL]")
     end
     
     monitor.setBackgroundColor(colors.black)
@@ -86,24 +64,23 @@ drawDisplay()
 
 while true do
     local event, side, x, y, message = os.pullEvent()
-    
+
     if event == "modem_message" and side == CHANNEL and type(y) == "table" then
-        currentFloor = y.floor or "--"
-        isMoving = y.moving or false
+        currentElevatorFloor = y.floor or "--"
         drawDisplay()
         
     elseif event == "monitor_touch" then
-        if y >= monitorHeight - 1 then
+        if y >= h - 1 then
             modem.transmit(CHANNEL, CHANNEL, { 
                 action = "call", 
                 targetFloor = myFloor 
             })
             
-            monitor.setCursorPos(1, monitorHeight)
+            monitor.setCursorPos(1, h)
             monitor.setBackgroundColor(colors.lime)
             monitor.setTextColor(colors.black)
-            monitor.write(string.rep(" ", math.floor((monitorWidth - 11) / 2)) .. "[ CALLING ]")
-            sleep(0.4)
+            monitor.write("[WAIT]")
+            sleep(0.3)
             drawDisplay()
         end
     end
