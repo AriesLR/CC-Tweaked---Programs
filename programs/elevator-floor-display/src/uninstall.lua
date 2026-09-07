@@ -6,20 +6,32 @@ else
     print("/alr/elevator-floor-display folder not found, skipping...")
 end
 
--- Delete install_send.lua
-if fs.exists("/install_send.lua") then
-    print("Deleting install_send.lua...")
-    fs.delete("/install_send.lua")
-else
-    print("install_send.lua not found, skipping...")
+-- Delete launcher and installer scripts
+local filesToDelete = {
+    "/elevator_floor_display.lua",
+    "/install.lua",
+    "/install_send.lua",
+    "/install_display.lua"
+}
+
+for _, path in ipairs(filesToDelete) do
+    if fs.exists(path) then
+        print("Deleting " .. path .. "...")
+        fs.delete(path)
+    end
 end
 
--- Delete install_display.lua
-if fs.exists("/install_display.lua") then
-    print("Deleting install_display.lua...")
-    fs.delete("/install_display.lua")
-else
-    print("install_display.lua not found, skipping...")
+-- Clean up /startup.lua if it points to elevator-floor-display
+if fs.exists("/startup.lua") and not fs.isDir("/startup.lua") then
+    local f = fs.open("/startup.lua", "r")
+    if f then
+        local content = f.readAll()
+        f.close()
+        if content:find("/alr/elevator%-floor%-display") then
+            print("Removing elevator /startup.lua...")
+            fs.delete("/startup.lua")
+        end
+    end
 end
 
 -- Temporary script to delete this script after it finishes
