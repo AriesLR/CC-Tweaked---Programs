@@ -2,7 +2,7 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- please github
+-- no cache now?
 
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
@@ -29,9 +29,9 @@ end
 local currentFloor = "--"
 local isElevatorMoving = false
 
-local function writeCentered(text, y, fgColor, bgColor)
+local function writeCentered(text, y, fgColor)
     monitor.setCursorPos(1, y)
-    monitor.setBackgroundColor(bgColor or colors.black)
+    monitor.setBackgroundColor(colors.black)
     monitor.setTextColor(fgColor or colors.white)
     
     local str = tostring(text)
@@ -42,29 +42,18 @@ local function writeCentered(text, y, fgColor, bgColor)
     monitor.write(line)
 end
 
-local function drawButtonCap(y, btnColor)
-    monitor.setCursorPos(1, y)
-    monitor.setTextColor(btnColor)
-    monitor.setBackgroundColor(colors.black)
-    monitor.write(string.rep("\143", termW))
-end
-
 local function drawDisplay(floor, isMoving)
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
     
     local floorColor = isMoving and colors.yellow or colors.lime
-    writeCentered(floor, 2, floorColor, colors.black)
+    writeCentered(floor, 2, floorColor)
     
     local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
-    local btnBg = isHere and colors.gray or colors.cyan
-    local btnFg = isHere and colors.lightGray or colors.black
+    local btnFg = isHere and colors.gray or colors.cyan
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
     
-    drawButtonCap(termH - 1, btnBg)
-    writeCentered(btnText, termH, btnFg, btnBg)
-    
-    monitor.setBackgroundColor(colors.black)
+    writeCentered(btnText, termH, btnFg)
 end
 
 drawDisplay("--", false)
@@ -83,8 +72,7 @@ while true do
             targetFloor = myFloor 
         })
         
-        drawButtonCap(termH - 1, colors.lime)
-        writeCentered("[ WAIT ]", termH, colors.black, colors.lime)
+        writeCentered("[ WAIT ]", termH, colors.lime)
         
         sleep(0.4)
         drawDisplay(currentFloor, isElevatorMoving)
