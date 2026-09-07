@@ -1,6 +1,7 @@
 local scriptUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/display_floor.lua"
 local updateUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/update_display.lua"
 local uninstallUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/uninstall.lua"
+local createStartupUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/create_startup_display.lua"
 local targetDir = "/alr/elevator-floor-display"
 
 -- Ensure the directory exists
@@ -37,6 +38,9 @@ downloadFile(uninstallUrl, targetDir)
 
 -- Download updater
 downloadFile(updateUrl, targetDir)
+
+-- Download startup script
+downloadFile(createStartupUrl, targetDir)
 
 -- Run the main script
 print("Running " .. mainScriptPath .. "...")
