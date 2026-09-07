@@ -20,11 +20,15 @@ elseif displayExists and sendExists then
     else
         scriptToRun = displayScript
     end
+elseif fs.exists(targetDir .. "/broadcast_update.lua") then
+    print("Master computer (broadcast_update.lua) detected. Startup script is not needed for master.")
+    return
 else
-    printError("Error: No installation found in " .. targetDir .. " (neither display_floor.lua nor send_floor.lua exists).")
+    printError("Error: No valid startup script found in " .. targetDir .. " (neither display_floor.lua nor send_floor.lua exists).")
     return
 end
 
+-- If /startup.lua exists and is a directory, remove it first
 if fs.exists(startupPath) and fs.isDir(startupPath) then
     fs.delete(startupPath)
 end

@@ -24,11 +24,12 @@ print("========================================")
 print("Select operational mode:")
 print("  1. Display (Monitor Computer)")
 print("  2. Send (Elevator Computer)")
+print("  3. Master (Broadcast Update Computer)")
 print()
 
 local selectedScript
 while true do
-    write("Enter choice [1-2]: ")
+    write("Enter choice [1-3]: ")
     local input = read()
     if input == "1" or input:lower() == "display" then
         selectedScript = "display_floor.lua"
@@ -36,8 +37,11 @@ while true do
     elseif input == "2" or input:lower() == "send" then
         selectedScript = "send_floor.lua"
         break
+    elseif input == "3" or input:lower() == "master" or input:lower() == "broadcast" then
+        selectedScript = "broadcast_update.lua"
+        break
     else
-        print("Invalid selection. Please choose 1 or 2.")
+        print("Invalid selection. Please choose 1, 2, or 3.")
     end
 end
 
@@ -76,9 +80,12 @@ end
 local filesToDownload = {
     selectedScript,
     "update.lua",
-    "create_startup.lua",
     "uninstall.lua"
 }
+
+if selectedScript ~= "broadcast_update.lua" then
+    table.insert(filesToDownload, 3, "create_startup.lua")
+end
 
 print()
 local success = true
@@ -95,11 +102,18 @@ if not success then
     return
 end
 
-print()
-shell.run(targetDir .. "/create_startup.lua")
+if selectedScript ~= "broadcast_update.lua" then
+    print()
+    shell.run(targetDir .. "/create_startup.lua")
+end
 
 print("\nSetup complete!")
 
-local mainScriptPath = targetDir .. "/" .. selectedScript
-print("Running " .. mainScriptPath .. "...\n")
-shell.run(mainScriptPath)
+if selectedScript ~= "broadcast_update.lua" then
+    local mainScriptPath = targetDir .. "/" .. selectedScript
+    print("Running " .. mainScriptPath .. "...\n")
+    shell.run(mainScriptPath)
+else
+    print("\nMaster setup complete. To broadcast an update when ready, run:")
+    print("  " .. targetDir .. "/broadcast_update.lua\n")
+end

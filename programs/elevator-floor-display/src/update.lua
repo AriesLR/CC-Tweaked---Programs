@@ -1,6 +1,7 @@
 local targetDir = "/alr/elevator-floor-display"
 local displayScript = targetDir .. "/display_floor.lua"
 local sendScript = targetDir .. "/send_floor.lua"
+local masterScript = targetDir .. "/broadcast_update.lua"
 local baseUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/"
 local launcherUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/elevator_floor_display.lua"
 
@@ -12,24 +13,29 @@ end
 local activeScript
 local displayExists = fs.exists(displayScript)
 local sendExists = fs.exists(sendScript)
+local masterExists = fs.exists(masterScript)
 
-if displayExists and not sendExists then
+if displayExists and not sendExists and not masterExists then
     activeScript = "display_floor.lua"
-elseif sendExists and not displayExists then
+elseif sendExists and not displayExists and not masterExists then
     activeScript = "send_floor.lua"
-elseif displayExists and sendExists then
+elseif masterExists and not displayExists and not sendExists then
+    activeScript = "broadcast_update.lua"
+elseif displayExists or sendExists or masterExists then
     print("Multiple operational scripts detected in " .. targetDir)
-    write("Update mode (1: Display, 2: Send, 3: Both): ")
+    write("Update mode (1: Display, 2: Send, 3: Master, 4: All): ")
     local choice = read()
     if choice == "1" or choice:lower() == "display" then
         activeScript = "display_floor.lua"
     elseif choice == "2" or choice:lower() == "send" then
         activeScript = "send_floor.lua"
+    elseif choice == "3" or choice:lower() == "master" then
+        activeScript = "broadcast_update.lua"
     else
-        activeScript = "both"
+        activeScript = "all"
     end
 else
-    printError("Error: Neither display_floor.lua nor send_floor.lua found in " .. targetDir)
+    printError("Error: No elevator installation found in " .. targetDir)
     return
 end
 
@@ -67,9 +73,10 @@ print()
 
 local success = true
 
-if activeScript == "both" then
-    if not downloadFile(baseUrl .. "display_floor.lua", displayScript) then success = false end
-    if not downloadFile(baseUrl .. "send_floor.lua", sendScript) then success = false end
+if activeScript == "all" then
+    if displayExists and not downloadFile(baseUrl .. "display_floor.lua", displayScript) then success = false end
+    if sendExists and not downloadFile(baseUrl .. "send_floor.lua", sendScript) then success = false end
+    if masterExists and not downloadFile(baseUrl .. "broadcast_update.lua", masterScript) then success = false end
 else
     if not downloadFile(baseUrl .. activeScript, targetDir .. "/" .. activeScript) then
         success = false
@@ -78,9 +85,12 @@ end
 
 local companionScripts = {
     "update.lua",
-    "create_startup.lua",
     "uninstall.lua"
 }
+
+if activeScript ~= "broadcast_update.lua" then
+    table.insert(companionScripts, 2, "create_startup.lua")
+end
 
 for _, fileName in ipairs(companionScripts) do
     if not downloadFile(baseUrl .. fileName, targetDir .. "/" .. fileName) then
