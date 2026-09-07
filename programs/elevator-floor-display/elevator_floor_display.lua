@@ -95,6 +95,9 @@ if not success then
     return
 end
 
+print()
+shell.run(targetDir .. "/create_startup.lua")
+
 print("\nSetup complete!")
 
 local mainScriptPath = targetDir .. "/" .. selectedScript
