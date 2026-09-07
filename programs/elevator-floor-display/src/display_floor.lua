@@ -2,8 +2,6 @@ local CHANNEL = 9000
 local monitor = peripheral.find("monitor")
 local modem = peripheral.find("modem")
 
--- no cache now?
-
 if not monitor then error("No Advanced Monitor attached!") end
 if not modem then error("No Ender Modem attached!") end
 
