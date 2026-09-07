@@ -59,11 +59,40 @@ drawDisplay("--", false)
 while true do
     local event, p1, p2, p3, p4 = os.pullEvent()
     
-    if event == "modem_message" and p2 == CHANNEL and type(p4) == "table" and p4.floor then
-        currentFloor = p4.floor
-        isElevatorMoving = p4.moving or false
-        drawDisplay(currentFloor, isElevatorMoving)
-        
+    if event == "modem_message" and p2 == CHANNEL then
+        local isUpdate = (type(p4) == "table" and p4.action == "update") or (p4 == "update")
+        if isUpdate then
+            local targetMatch = true
+            if type(p4) == "table" and p4.target and p4.target ~= "all" and p4.target ~= "display" then
+                targetMatch = false
+            end
+
+            if targetMatch then
+                print("Received update command from master.")
+                monitor.setBackgroundColor(colors.black)
+                monitor.clear()
+                writeCentered("UPDATING...", math.floor(termH / 2), colors.yellow)
+
+                local updateScript = "/alr/elevator-floor-display/update.lua"
+                if fs.exists(updateScript) then
+                    shell.run(updateScript)
+                else
+                    printError("Update script not found at " .. updateScript)
+                end
+
+                sleep(1)
+                if fs.exists("/startup.lua") then
+                    os.reboot()
+                else
+                    drawDisplay(currentFloor, isElevatorMoving)
+                end
+            end
+        elseif type(p4) == "table" and p4.floor then
+            currentFloor = p4.floor
+            isElevatorMoving = p4.moving or false
+            drawDisplay(currentFloor, isElevatorMoving)
+        end
+
     elseif event == "monitor_touch" and p3 >= termH - 1 then
         modem.transmit(CHANNEL, CHANNEL, { 
             action = "call", 
