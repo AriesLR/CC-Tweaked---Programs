@@ -350,6 +350,13 @@ while true do
                     os.reboot()
                 end
 
+            elseif msg.action == "sync_page" and msg.page then
+                local newP = tonumber(msg.page)
+                if newP and newP >= 1 and newP <= totalPages and newP ~= currentPage then
+                    currentPage = newP
+                    drawDisplay()
+                end
+
             else
                 local stateChanged = false
 
@@ -392,10 +399,18 @@ while true do
         if navButtons.prev and navButtons.prev.enabled and ty == navButtons.prev.y and tx >= navButtons.prev.x1 and tx <= navButtons.prev.x2 then
             currentPage = currentPage - 1
             drawDisplay()
+            modem.transmit(CHANNEL, CHANNEL, {
+                action = "sync_page",
+                page = currentPage
+            })
 
         elseif navButtons.next and navButtons.next.enabled and ty == navButtons.next.y and tx >= navButtons.next.x1 and tx <= navButtons.next.x2 then
             currentPage = currentPage + 1
             drawDisplay()
+            modem.transmit(CHANNEL, CHANNEL, {
+                action = "sync_page",
+                page = currentPage
+            })
 
         else
             for _, btn in ipairs(activeButtons) do
