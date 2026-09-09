@@ -1,4 +1,21 @@
-local CHANNEL = 9000
+local function loadChannel()
+    local channelPath = "/channel.txt"
+    if fs.exists(channelPath) then
+        local f = fs.open(channelPath, "r")
+        local chStr = f.readLine()
+        f.close()
+        local ch = tonumber(chStr)
+        if ch and ch > 0 and ch <= 65535 then
+            return ch
+        end
+    end
+    local f = fs.open(channelPath, "w")
+    f.write("9000")
+    f.close()
+    return 9000
+end
+
+local CHANNEL = loadChannel()
 local lift = peripheral.find("create_elevator")
 local modem = peripheral.find("modem")
 
@@ -124,6 +141,16 @@ local function listenForCalls()
                     end
                 else
                     printError("Update script not found at " .. updateScript)
+                end
+            elseif message.action == "set_channel" and message.newChannel then
+                local newCh = tonumber(message.newChannel)
+                if newCh and newCh > 0 and newCh <= 65535 then
+                    print(string.format("Channel change command received: switching to %d...", newCh))
+                    local f = fs.open("/channel.txt", "w")
+                    f.write(tostring(newCh))
+                    f.close()
+                    sleep(1)
+                    os.reboot()
                 end
             elseif message.action == "call" and message.targetFloor and lift.callToFloor then
                 local floorList = getFloorList()
