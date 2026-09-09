@@ -87,25 +87,30 @@ local function writeCentered(text, y, fgColor)
     monitor.write(line)
 end
 
+local isCalling = false
+
 local function drawDisplay(floor, isMoving)
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
     
     local floorColor = isMoving and colors.yellow or colors.lime
-    local statusText = isMoving and (floor .. " [MOVING]") or floor
-    
-    if #statusText > termW then
-        writeCentered(floor, 2, floorColor)
-        if isMoving and termH > 3 then
-            writeCentered("[MOVING]", 3, colors.yellow)
-        end
-    else
-        writeCentered(statusText, 2, floorColor)
-    end
+    writeCentered(floor, 2, floorColor)
     
     local isHere = (tostring(floor) == tostring(myFloor) or tostring(currentRawFloor) == tostring(myFloor)) and not isMoving
-    local btnFg = isHere and colors.gray or colors.cyan
-    local btnText = isHere and "[ HERE ]" or "[ CALL ]"
+    
+    local btnFg
+    local btnText
+    
+    if isMoving or isCalling then
+        btnFg = colors.yellow
+        btnText = "[ MOVING ]"
+    elseif isHere then
+        btnFg = colors.gray
+        btnText = "[ HERE ]"
+    else
+        btnFg = colors.cyan
+        btnText = "[ CALL ]"
+    end
     
     writeCentered(btnText, termH, btnFg)
 end
@@ -147,18 +152,21 @@ while true do
             currentFloor = p4.floor
             currentRawFloor = p4.rawFloor or p4.floor
             isElevatorMoving = p4.moving or false
+            if not isElevatorMoving then
+                isCalling = false
+            end
             drawDisplay(currentFloor, isElevatorMoving)
         end
 
     elseif event == "monitor_touch" and p3 >= termH - 1 then
-        modem.transmit(CHANNEL, CHANNEL, { 
-            action = "call", 
-            targetFloor = myFloor 
-        })
-        
-        writeCentered("[ WAIT ]", termH, colors.lime)
-        
-        sleep(0.4)
-        drawDisplay(currentFloor, isElevatorMoving)
+        local isHere = (tostring(currentFloor) == tostring(myFloor) or tostring(currentRawFloor) == tostring(myFloor)) and not isElevatorMoving
+        if not isHere and not isElevatorMoving and not isCalling then
+            isCalling = true
+            modem.transmit(CHANNEL, CHANNEL, { 
+                action = "call", 
+                targetFloor = myFloor 
+            })
+            drawDisplay(currentFloor, isElevatorMoving)
+        end
     end
 end
