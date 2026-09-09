@@ -1,6 +1,7 @@
 local targetDir = "/alr/elevator-floor-display"
 local displayScript = targetDir .. "/display_floor.lua"
 local sendScript = targetDir .. "/send_floor.lua"
+local selectScript = targetDir .. "/select_floor.lua"
 local masterScript = targetDir .. "/broadcast_update.lua"
 local baseUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/"
 local launcherUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/elevator_floor_display.lua"
@@ -13,23 +14,32 @@ end
 local activeScript
 local displayExists = fs.exists(displayScript)
 local sendExists = fs.exists(sendScript)
+local selectExists = fs.exists(selectScript)
 local masterExists = fs.exists(masterScript)
 
-if displayExists and not sendExists and not masterExists then
-    activeScript = "display_floor.lua"
-elseif sendExists and not displayExists and not masterExists then
-    activeScript = "send_floor.lua"
-elseif masterExists and not displayExists and not sendExists then
-    activeScript = "broadcast_update.lua"
-elseif displayExists or sendExists or masterExists then
+local existingCount = (displayExists and 1 or 0) + (sendExists and 1 or 0) + (selectExists and 1 or 0) + (masterExists and 1 or 0)
+
+if existingCount == 1 then
+    if displayExists then
+        activeScript = "display_floor.lua"
+    elseif sendExists then
+        activeScript = "send_floor.lua"
+    elseif selectExists then
+        activeScript = "select_floor.lua"
+    elseif masterExists then
+        activeScript = "broadcast_update.lua"
+    end
+elseif existingCount > 1 then
     print("Multiple operational scripts detected in " .. targetDir)
-    write("Update mode (1: Display, 2: Send, 3: Master, 4: All): ")
+    write("Update mode (1: Display, 2: Send, 3: Selector, 4: Master, 5: All): ")
     local choice = read()
     if choice == "1" or choice:lower() == "display" then
         activeScript = "display_floor.lua"
     elseif choice == "2" or choice:lower() == "send" then
         activeScript = "send_floor.lua"
-    elseif choice == "3" or choice:lower() == "master" then
+    elseif choice == "3" or choice:lower() == "selector" or choice:lower() == "select" then
+        activeScript = "select_floor.lua"
+    elseif choice == "4" or choice:lower() == "master" then
         activeScript = "broadcast_update.lua"
     else
         activeScript = "all"
@@ -76,6 +86,7 @@ local success = true
 if activeScript == "all" then
     if displayExists and not downloadFile(baseUrl .. "display_floor.lua", displayScript) then success = false end
     if sendExists and not downloadFile(baseUrl .. "send_floor.lua", sendScript) then success = false end
+    if selectExists and not downloadFile(baseUrl .. "select_floor.lua", selectScript) then success = false end
     if masterExists and not downloadFile(baseUrl .. "broadcast_update.lua", masterScript) then success = false end
 else
     if not downloadFile(baseUrl .. activeScript, targetDir .. "/" .. activeScript) then

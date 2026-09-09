@@ -11,7 +11,9 @@ local filesToDelete = {
     "/elevator_floor_display.lua",
     "/install.lua",
     "/install_send.lua",
-    "/install_display.lua"
+    "/install_display.lua",
+    "/install_select.lua",
+    "/floor.txt"
 }
 
 for _, path in ipairs(filesToDelete) do
