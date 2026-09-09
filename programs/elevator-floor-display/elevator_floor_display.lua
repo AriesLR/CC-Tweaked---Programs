@@ -16,6 +16,23 @@ elseif fs.exists(selectScript) then
     print("Starting Elevator Floor Selector...")
     shell.run(selectScript)
     return
+elseif fs.exists(targetDir .. "/broadcast_update.lua") or fs.exists(targetDir .. "/broadcast_channel_change.lua") then
+    print("========================================")
+    print("        Elevator Master Control         ")
+    print("========================================")
+    print("Select tool:")
+    print("  1. Broadcast Update")
+    print("  2. Broadcast Channel Change")
+    print("  3. Exit")
+    print()
+    write("Enter choice [1-3]: ")
+    local choice = read()
+    if choice == "1" then
+        shell.run(targetDir .. "/broadcast_update.lua")
+    elseif choice == "2" then
+        shell.run(targetDir .. "/broadcast_channel_change.lua")
+    end
+    return
 end
 
 if not http then
@@ -52,6 +69,29 @@ while true do
     else
         print("Invalid selection. Please choose 1, 2, 3, or 4.")
     end
+end
+
+if selectedScript ~= "broadcast_update.lua" then
+    print()
+    local channel
+    while not channel do
+        write("Enter elevator channel [default: 9000]: ")
+        local input = read()
+        if input == "" then
+            channel = 9000
+        else
+            local num = tonumber(input)
+            if num and num > 0 and num <= 65535 then
+                channel = num
+            else
+                printError("Invalid channel. Must be a number between 1 and 65535.")
+            end
+        end
+    end
+    local f = fs.open("/channel.txt", "w")
+    f.write(tostring(channel))
+    f.close()
+    print("Channel set to: " .. channel)
 end
 
 if not fs.exists(targetDir) then
@@ -92,7 +132,9 @@ local filesToDownload = {
     "uninstall.lua"
 }
 
-if selectedScript ~= "broadcast_update.lua" then
+if selectedScript == "broadcast_update.lua" then
+    table.insert(filesToDownload, 2, "broadcast_channel_change.lua")
+else
     table.insert(filesToDownload, 3, "create_startup.lua")
 end
 
@@ -123,6 +165,7 @@ if selectedScript ~= "broadcast_update.lua" then
     print("Running " .. mainScriptPath .. "...\n")
     shell.run(mainScriptPath)
 else
-    print("\nMaster setup complete. To broadcast an update when ready, run:")
-    print("  " .. targetDir .. "/broadcast_update.lua\n")
+    print("\nMaster setup complete. To use master tools, run:")
+    print("  " .. targetDir .. "/broadcast_update.lua")
+    print("  " .. targetDir .. "/broadcast_channel_change.lua\n")
 end

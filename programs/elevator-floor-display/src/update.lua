@@ -3,6 +3,7 @@ local displayScript = targetDir .. "/display_floor.lua"
 local sendScript = targetDir .. "/send_floor.lua"
 local selectScript = targetDir .. "/select_floor.lua"
 local masterScript = targetDir .. "/broadcast_update.lua"
+local masterChannelScript = targetDir .. "/broadcast_channel_change.lua"
 local baseUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/"
 local launcherUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/elevator_floor_display.lua"
 
@@ -15,7 +16,7 @@ local activeScript
 local displayExists = fs.exists(displayScript)
 local sendExists = fs.exists(sendScript)
 local selectExists = fs.exists(selectScript)
-local masterExists = fs.exists(masterScript)
+local masterExists = fs.exists(masterScript) or fs.exists(masterChannelScript)
 
 local existingCount = (displayExists and 1 or 0) + (sendExists and 1 or 0) + (selectExists and 1 or 0) + (masterExists and 1 or 0)
 
@@ -87,10 +88,18 @@ if activeScript == "all" then
     if displayExists and not downloadFile(baseUrl .. "display_floor.lua", displayScript) then success = false end
     if sendExists and not downloadFile(baseUrl .. "send_floor.lua", sendScript) then success = false end
     if selectExists and not downloadFile(baseUrl .. "select_floor.lua", selectScript) then success = false end
-    if masterExists and not downloadFile(baseUrl .. "broadcast_update.lua", masterScript) then success = false end
+    if masterExists then
+        if not downloadFile(baseUrl .. "broadcast_update.lua", masterScript) then success = false end
+        if not downloadFile(baseUrl .. "broadcast_channel_change.lua", masterChannelScript) then success = false end
+    end
 else
-    if not downloadFile(baseUrl .. activeScript, targetDir .. "/" .. activeScript) then
-        success = false
+    if activeScript == "broadcast_update.lua" then
+        if not downloadFile(baseUrl .. "broadcast_update.lua", masterScript) then success = false end
+        if not downloadFile(baseUrl .. "broadcast_channel_change.lua", masterChannelScript) then success = false end
+    else
+        if not downloadFile(baseUrl .. activeScript, targetDir .. "/" .. activeScript) then
+            success = false
+        end
     end
 end
 

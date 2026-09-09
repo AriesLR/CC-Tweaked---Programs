@@ -13,7 +13,8 @@ local filesToDelete = {
     "/install_send.lua",
     "/install_display.lua",
     "/install_select.lua",
-    "/floor.txt"
+    "/floor.txt",
+    "/channel.txt"
 }
 
 for _, path in ipairs(filesToDelete) do

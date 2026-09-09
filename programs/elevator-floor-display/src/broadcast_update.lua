@@ -1,4 +1,3 @@
-local CHANNEL = 9000
 local modem = peripheral.find("modem")
 
 if not modem then
@@ -9,9 +8,26 @@ end
 print("========================================")
 print("   Elevator Master - Broadcast Update   ")
 print("========================================")
-print("Target channel: " .. CHANNEL)
 print()
-write("Broadcast update command to all elevator computers (displays, selectors, senders)? (y/n): ")
+
+local channel
+while not channel do
+    write("Broadcast on channel [default: 9000]: ")
+    local input = read()
+    if input == "" then
+        channel = 9000
+    else
+        local num = tonumber(input)
+        if num and num > 0 and num <= 65535 then
+            channel = num
+        else
+            printError("Invalid channel. Must be a number between 1 and 65535.")
+        end
+    end
+end
+
+print()
+write(string.format("Broadcast update command on channel %d to all computers? (y/n): ", channel))
 local confirm = read()
 
 if confirm:lower() ~= "y" and confirm:lower() ~= "yes" then
@@ -19,11 +35,11 @@ if confirm:lower() ~= "y" and confirm:lower() ~= "yes" then
     return
 end
 
-print("Broadcasting update signal...")
+print("\nBroadcasting update signal...")
 
-modem.transmit(CHANNEL, CHANNEL, {
+modem.transmit(channel, channel, {
     action = "update",
     target = "all"
 })
 
-print("Update command broadcast sent successfully on channel " .. CHANNEL .. "!")
+print(string.format("Update command broadcast sent successfully on channel %d!\n", channel))

@@ -30,8 +30,8 @@ elseif existingCount > 1 then
     else
         scriptToRun = displayScript
     end
-elseif fs.exists(targetDir .. "/broadcast_update.lua") then
-    print("Master computer (broadcast_update.lua) detected. Startup script is not needed for master.")
+elseif fs.exists(targetDir .. "/broadcast_update.lua") or fs.exists(targetDir .. "/broadcast_channel_change.lua") then
+    print("Master computer detected. Startup script is not needed for master.")
     return
 else
     printError("Error: No valid startup script found in " .. targetDir .. " (neither display_floor.lua, send_floor.lua, nor select_floor.lua exists).")
