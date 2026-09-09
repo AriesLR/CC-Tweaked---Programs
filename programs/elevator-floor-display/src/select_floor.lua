@@ -92,18 +92,15 @@ local function calculateLayout()
     end
 
     local centerX = math.floor(termW / 2)
-    local centerGap = (termW >= 25) and 3 or ((termW >= 18) and 2 or 1)
-    
-    local leftColEnd = centerX - math.floor(centerGap / 2)
-    local rightColStart = leftColEnd + centerGap + 1
+    local col0_center = math.floor(termW * 0.25) + 1
+    local col1_center = termW - col0_center + 1
 
     return {
         startY = startY,
         footerY = footerY,
         centerX = centerX,
-        centerGap = centerGap,
-        leftColEnd = leftColEnd,
-        rightColStart = rightColStart,
+        col0_center = col0_center,
+        col1_center = col1_center,
         rowStep = rowStep,
         rowsPerPage = rowsPerPage,
         buttonsPerPage = buttonsPerPage
@@ -171,37 +168,26 @@ local function drawDisplay()
         local btnFg
         local label
 
-        local pad = (#displayName <= 2) and " " or ""
-        local padRight = pad
-        if #displayName == 1 then
-            pad = "  "
-            padRight = " "
-        end
-
         if isCurrent then
             btnFg = isElevatorMoving and colors.yellow or colors.lime
-            label = "*" .. pad .. displayName .. padRight .. "*"
+            label = "*" .. displayName .. "*"
         elseif isTarget then
             btnFg = colors.cyan
-            label = ">" .. pad .. displayName .. padRight .. "<"
+            label = ">" .. displayName .. "<"
         else
             btnFg = colors.white
-            label = "[" .. pad .. displayName .. padRight .. "]"
+            label = "[" .. displayName .. "]"
         end
 
-        local btnX
-        local tX1, tX2
-        if col == 0 then
-            btnX = layout.leftColEnd - #label + 1
-            tX1 = math.max(1, btnX - 2)
-            tX2 = layout.leftColEnd + 1
-        else
-            btnX = layout.rightColStart
-            tX1 = layout.rightColStart - 1
-            tX2 = math.min(termW, btnX + #label + 1)
-        end
+        local colCenter = (col == 0) and layout.col0_center or layout.col1_center
+        local btnX = math.floor(colCenter - (#label / 2))
+        if btnX < 1 then btnX = 1 end
+        if btnX + #label - 1 > termW then btnX = termW - #label + 1 end
 
         drawText(btnX, btnY, label, btnFg, colors.black)
+
+        local tX1 = (col == 0) and 1 or (layout.centerX + 1)
+        local tX2 = (col == 0) and layout.centerX or termW
 
         table.insert(activeButtons, {
             name = flName,
