@@ -92,7 +92,16 @@ local function drawDisplay(floor, isMoving)
     monitor.clear()
     
     local floorColor = isMoving and colors.yellow or colors.lime
-    writeCentered(floor, 2, floorColor)
+    local statusText = isMoving and (floor .. " [MOVING]") or floor
+    
+    if #statusText > termW then
+        writeCentered(floor, 2, floorColor)
+        if isMoving and termH > 3 then
+            writeCentered("[MOVING]", 3, colors.yellow)
+        end
+    else
+        writeCentered(statusText, 2, floorColor)
+    end
     
     local isHere = (tostring(floor) == tostring(myFloor) or tostring(currentRawFloor) == tostring(myFloor)) and not isMoving
     local btnFg = isHere and colors.gray or colors.cyan

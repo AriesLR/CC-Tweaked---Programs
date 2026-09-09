@@ -119,10 +119,10 @@ local function drawDisplay()
     local statusText
     local statusFg
     if isElevatorMoving then
-        statusText = "FL: " .. currentFloor .. " [MOVING]"
+        statusText = currentFloor .. " [MOVING]"
         statusFg = colors.yellow
     else
-        statusText = "FL: " .. currentFloor .. " [IDLE]"
+        statusText = currentFloor .. " [IDLE]"
         statusFg = colors.lime
     end
     writeCentered(statusText, 2, statusFg, colors.black)
@@ -139,7 +139,7 @@ local function drawDisplay()
     if #floors == 0 then
         writeCentered("Searching for", math.floor(termH / 2) - 1, colors.lightGray, colors.black)
         writeCentered("elevator floors...", math.floor(termH / 2), colors.lightGray, colors.black)
-        writeCentered("[ RETRY ]", math.floor(termH / 2) + 2, colors.cyan, colors.gray)
+        writeCentered("[ RETRY ]", math.floor(termH / 2) + 2, colors.cyan, colors.black)
         activeButtons[1] = {
             name = "__retry__",
             x1 = math.floor((termW - 9) / 2) + 1,
@@ -150,43 +150,36 @@ local function drawDisplay()
         return
     end
 
-    -- Render floor buttons for the current page
+    -- Render floor buttons for the current page in column-major order
     local startIndex = (currentPage - 1) * layout.buttonsPerPage + 1
     local endIndex = math.min(#floors, startIndex + layout.buttonsPerPage - 1)
 
-    for i = startIndex, endIndex do
-        local relIndex = i - startIndex
-        local col = relIndex % 2 -- 0 for left, 1 for right
-        local row = math.floor(relIndex / 2)
-
+    local function renderButton(idx, col, row)
+        if idx > endIndex then return end
         local btnX = layout.margin + col * (layout.colWidth + layout.colGap)
         local btnY = layout.startY + row * layout.rowStep
-        local fl = floors[i]
+        local fl = floors[idx]
         local flName = tostring(fl.name)
         local displayName = (fl.longName and fl.longName ~= "") and tostring(fl.longName) or flName
 
         local isCurrent = (flName == tostring(currentFloor)) or (displayName == tostring(currentFloor))
         local isTarget = (flName == tostring(targetFloor)) or (displayName == tostring(targetFloor)) or (flName == tostring(callingFloor)) or (displayName == tostring(callingFloor))
 
-        local btnBg
         local btnFg
         local label
 
         if isCurrent then
-            btnBg = isElevatorMoving and colors.yellow or colors.lime
-            btnFg = colors.black
+            btnFg = isElevatorMoving and colors.yellow or colors.lime
             label = centerText("*" .. displayName .. "*", layout.colWidth)
         elseif isTarget then
-            btnBg = colors.cyan
-            btnFg = colors.black
-            label = centerText(displayName .. "...", layout.colWidth)
+            btnFg = colors.cyan
+            label = centerText(">" .. displayName .. "<", layout.colWidth)
         else
-            btnBg = colors.gray
             btnFg = colors.white
-            label = centerText(displayName, layout.colWidth)
+            label = centerText("[" .. displayName .. "]", layout.colWidth)
         end
 
-        drawText(btnX, btnY, label, btnFg, btnBg)
+        drawText(btnX, btnY, label, btnFg, colors.black)
 
         table.insert(activeButtons, {
             name = flName,
@@ -197,6 +190,11 @@ local function drawDisplay()
             y1 = btnY,
             y2 = btnY
         })
+    end
+
+    for r = 0, layout.rowsPerPage - 1 do
+        renderButton(startIndex + r, 0, r)
+        renderButton(startIndex + layout.rowsPerPage + r, 1, r)
     end
 
     -- Footer Navigation (Row footerY)
