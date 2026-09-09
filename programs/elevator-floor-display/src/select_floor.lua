@@ -19,7 +19,6 @@ local floors = {}
 local currentPage = 1
 local totalPages = 1
 
--- Bounding boxes for touch handling
 local activeButtons = {}
 local navButtons = {
     prev = nil,
@@ -52,7 +51,6 @@ local function writeCentered(text, y, fgColor, bgColor)
     monitor.write(str)
 end
 
--- Sort floors descending by Y level (Elevator Panel Order: top floors first)
 local function sortFloors(floorList)
     table.sort(floorList, function(a, b)
         local yA = tonumber(a.y) or 0
@@ -72,16 +70,18 @@ end
 local function calculateLayout()
     local startY = 4
     local footerY = termH
-    local availableHeight = footerY - 2 - startY + 1
+    local availableHeight = footerY - 1 - startY
     
-    -- Two columns layout
-    local colGap = 1
-    local margin = 1
-    local colWidth = math.max(5, math.floor((termW - (margin * 2) - colGap) / 2))
+    local rowStep = 1
+    local rowsPerPage = 4
+    if availableHeight >= 7 then
+        rowStep = 2
+        rowsPerPage = math.min(6, math.floor((availableHeight + 1) / 2))
+    else
+        rowStep = 1
+        rowsPerPage = math.max(1, availableHeight)
+    end
     
-    -- Spacing: 1 row button + 1 row gap if space allows, otherwise compact
-    local rowStep = (availableHeight >= 8) and 2 or 1
-    local rowsPerPage = math.max(1, math.floor((availableHeight + (rowStep - 1)) / rowStep))
     local buttonsPerPage = rowsPerPage * 2
 
     totalPages = math.max(1, math.ceil(#floors / buttonsPerPage))
@@ -91,12 +91,19 @@ local function calculateLayout()
         currentPage = 1
     end
 
+    local centerX = math.floor(termW / 2)
+    local centerGap = (termW >= 25) and 3 or ((termW >= 18) and 2 or 1)
+    
+    local leftColEnd = centerX - math.floor(centerGap / 2)
+    local rightColStart = leftColEnd + centerGap + 1
+
     return {
         startY = startY,
         footerY = footerY,
-        colWidth = colWidth,
-        margin = margin,
-        colGap = colGap,
+        centerX = centerX,
+        centerGap = centerGap,
+        leftColEnd = leftColEnd,
+        rightColStart = rightColStart,
         rowStep = rowStep,
         rowsPerPage = rowsPerPage,
         buttonsPerPage = buttonsPerPage
@@ -112,7 +119,6 @@ local function drawDisplay()
     monitor.setBackgroundColor(colors.black)
     monitor.clear()
 
-    -- Header (Rows 1-3)
     local headerTitle = "ELEVATOR CONTROL"
     writeCentered(headerTitle, 1, colors.white, colors.black)
 
@@ -135,7 +141,6 @@ local function drawDisplay()
         monitor.write(string.rep("-", termW))
     end
 
-    -- If no floors received yet
     if #floors == 0 then
         writeCentered("Searching for", math.floor(termH / 2) - 1, colors.lightGray, colors.black)
         writeCentered("elevator floors...", math.floor(termH / 2), colors.lightGray, colors.black)
@@ -150,13 +155,11 @@ local function drawDisplay()
         return
     end
 
-    -- Render floor buttons for the current page in column-major order
     local startIndex = (currentPage - 1) * layout.buttonsPerPage + 1
     local endIndex = math.min(#floors, startIndex + layout.buttonsPerPage - 1)
 
     local function renderButton(idx, col, row)
         if idx > endIndex then return end
-        local btnX = layout.margin + col * (layout.colWidth + layout.colGap)
         local btnY = layout.startY + row * layout.rowStep
         local fl = floors[idx]
         local flName = tostring(fl.name)
@@ -168,15 +171,34 @@ local function drawDisplay()
         local btnFg
         local label
 
+        local pad = (#displayName <= 2) and " " or ""
+        local padRight = pad
+        if #displayName == 1 then
+            pad = "  "
+            padRight = " "
+        end
+
         if isCurrent then
             btnFg = isElevatorMoving and colors.yellow or colors.lime
-            label = centerText("*" .. displayName .. "*", layout.colWidth)
+            label = "*" .. pad .. displayName .. padRight .. "*"
         elseif isTarget then
             btnFg = colors.cyan
-            label = centerText(">" .. displayName .. "<", layout.colWidth)
+            label = ">" .. pad .. displayName .. padRight .. "<"
         else
             btnFg = colors.white
-            label = centerText("[" .. displayName .. "]", layout.colWidth)
+            label = "[" .. pad .. displayName .. padRight .. "]"
+        end
+
+        local btnX
+        local tX1, tX2
+        if col == 0 then
+            btnX = layout.leftColEnd - #label + 1
+            tX1 = math.max(1, btnX - 2)
+            tX2 = layout.leftColEnd + 1
+        else
+            btnX = layout.rightColStart
+            tX1 = layout.rightColStart - 1
+            tX2 = math.min(termW, btnX + #label + 1)
         end
 
         drawText(btnX, btnY, label, btnFg, colors.black)
@@ -185,8 +207,8 @@ local function drawDisplay()
             name = flName,
             displayName = displayName,
             isCurrent = isCurrent,
-            x1 = btnX,
-            x2 = btnX + layout.colWidth - 1,
+            x1 = tX1,
+            x2 = tX2,
             y1 = btnY,
             y2 = btnY
         })
@@ -197,7 +219,6 @@ local function drawDisplay()
         renderButton(startIndex + layout.rowsPerPage + r, 1, r)
     end
 
-    -- Footer Navigation (Row footerY)
     local prevLabel = "[ < ]"
     local nextLabel = "[ > ]"
     local pageLabel = currentPage .. "/" .. totalPages
@@ -227,7 +248,6 @@ local function drawDisplay()
     }
 end
 
--- Request floors immediately from send_floor
 local function requestFloors()
     modem.transmit(CHANNEL, CHANNEL, { action = "get_floors" })
 end
@@ -313,7 +333,6 @@ while true do
     elseif event == "monitor_touch" then
         local tx, ty = p2, p3
 
-        -- Check footer nav
         if navButtons.prev and navButtons.prev.enabled and ty == navButtons.prev.y and tx >= navButtons.prev.x1 and tx <= navButtons.prev.x2 then
             currentPage = currentPage - 1
             drawDisplay()
@@ -323,7 +342,6 @@ while true do
             drawDisplay()
 
         else
-            -- Check floor buttons
             for _, btn in ipairs(activeButtons) do
                 if ty >= btn.y1 and ty <= btn.y2 and tx >= btn.x1 and tx <= btn.x2 then
                     if btn.name == "__retry__" then
