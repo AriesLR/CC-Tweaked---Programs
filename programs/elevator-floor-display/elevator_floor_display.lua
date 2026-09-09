@@ -1,6 +1,7 @@
 local targetDir = "/alr/elevator-floor-display"
 local displayScript = targetDir .. "/display_floor.lua"
 local sendScript = targetDir .. "/send_floor.lua"
+local selectScript = targetDir .. "/select_floor.lua"
 local baseUrl = "https://cccdn.arieslr.xyz/programs/elevator-floor-display/src/"
 
 if fs.exists(displayScript) then
@@ -10,6 +11,10 @@ if fs.exists(displayScript) then
 elseif fs.exists(sendScript) then
     print("Starting Elevator Floor Sender...")
     shell.run(sendScript)
+    return
+elseif fs.exists(selectScript) then
+    print("Starting Elevator Floor Selector...")
+    shell.run(selectScript)
     return
 end
 
@@ -25,11 +30,12 @@ print("Select operational mode:")
 print("  1. Display (Monitor Computer)")
 print("  2. Send (Elevator Computer)")
 print("  3. Master (Broadcast Update Computer)")
+print("  4. Selector (Floor Selector Panel)")
 print()
 
 local selectedScript
 while true do
-    write("Enter choice [1-3]: ")
+    write("Enter choice [1-4]: ")
     local input = read()
     if input == "1" or input:lower() == "display" then
         selectedScript = "display_floor.lua"
@@ -40,8 +46,11 @@ while true do
     elseif input == "3" or input:lower() == "master" or input:lower() == "broadcast" then
         selectedScript = "broadcast_update.lua"
         break
+    elseif input == "4" or input:lower() == "selector" or input:lower() == "select" or input:lower() == "panel" then
+        selectedScript = "select_floor.lua"
+        break
     else
-        print("Invalid selection. Please choose 1, 2, or 3.")
+        print("Invalid selection. Please choose 1, 2, 3, or 4.")
     end
 end
 

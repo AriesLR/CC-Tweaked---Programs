@@ -16,15 +16,62 @@ if fs.exists("floor.txt") then
     myFloor = file.readLine()
     file.close()
 else
-    print("What floor is this computer on?")
-    io.write("Floor Name/Number: ")
-    myFloor = read()
+    print("Scanning for elevator floors...")
+    modem.transmit(CHANNEL, CHANNEL, { action = "get_floors" })
+    
+    local timer = os.startTimer(1.5)
+    local detectedFloors = nil
+    
+    while true do
+        local ev, p1, p2, p3, p4 = os.pullEvent()
+        if ev == "timer" and p1 == timer then
+            break
+        elseif ev == "modem_message" and p2 == CHANNEL and type(p4) == "table" and type(p4.floors) == "table" and #p4.floors > 0 then
+            detectedFloors = p4.floors
+            break
+        end
+    end
+    
+    if detectedFloors and #detectedFloors > 0 then
+        table.sort(detectedFloors, function(a, b)
+            local yA = tonumber(a.y) or 0
+            local yB = tonumber(b.y) or 0
+            if yA ~= yB then return yA > yB end
+            return tostring(a.name) > tostring(b.name)
+        end)
+        
+        print("\nElevator floors detected:")
+        for idx, fl in ipairs(detectedFloors) do
+            local dName = (fl.longName and fl.longName ~= "") and fl.longName or fl.name
+            print(string.format("  %d. %s (Y: %s)", idx, tostring(dName), tostring(fl.y or "?")))
+        end
+        print()
+        while not myFloor or myFloor == "" do
+            write("Select floor [1-" .. #detectedFloors .. "] or type name: ")
+            local input = read()
+            local num = tonumber(input)
+            if num and detectedFloors[num] then
+                local chosen = detectedFloors[num]
+                myFloor = (chosen.longName and chosen.longName ~= "") and tostring(chosen.longName) or tostring(chosen.name)
+            elseif input and input:gsub("%s+", "") ~= "" then
+                myFloor = input
+            end
+        end
+    else
+        print("Could not detect elevator floors automatically.")
+        print("What floor is this computer on?")
+        io.write("Floor Name/Number: ")
+        myFloor = read()
+    end
+
     local file = fs.open("floor.txt", "w")
     file.write(myFloor)
     file.close()
+    print("Floor configured as: " .. myFloor)
 end
 
 local currentFloor = "--"
+local currentRawFloor = "--"
 local isElevatorMoving = false
 
 local function writeCentered(text, y, fgColor)
@@ -47,7 +94,7 @@ local function drawDisplay(floor, isMoving)
     local floorColor = isMoving and colors.yellow or colors.lime
     writeCentered(floor, 2, floorColor)
     
-    local isHere = (tostring(floor) == tostring(myFloor)) and not isMoving
+    local isHere = (tostring(floor) == tostring(myFloor) or tostring(currentRawFloor) == tostring(myFloor)) and not isMoving
     local btnFg = isHere and colors.gray or colors.cyan
     local btnText = isHere and "[ HERE ]" or "[ CALL ]"
     
@@ -89,6 +136,7 @@ while true do
             end
         elseif type(p4) == "table" and p4.floor then
             currentFloor = p4.floor
+            currentRawFloor = p4.rawFloor or p4.floor
             isElevatorMoving = p4.moving or false
             drawDisplay(currentFloor, isElevatorMoving)
         end
